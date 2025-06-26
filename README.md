@@ -39,7 +39,7 @@ npm run copy
 该脚本会自动创建 dist 目录（如果不存在），并在复制前清空 dist 目录，确保内容为最新。
 
 ## 项目目录结构
-.
+```
 ├── README.md
 ├── .gitignore
 ├── package.json
@@ -53,6 +53,7 @@ npm run copy
 ├── .git/
 ├── node_modules/
 └── packages/
+```
 dist/：所有子项目打包后的产物目录
 scripts/：自动化脚本目录
 packages/：存放所有子项目（已被 .gitignore 忽略具体内容）

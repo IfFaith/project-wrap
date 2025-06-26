@@ -13,7 +13,10 @@ const ihiveLibDir = fs
 const PKG_MALL_COOK_TEMPLATE = resolve(packagesDir, ihiveLibDir)
 const PKG_MALL_COOK_PLATFORMS = fs
   .readdirSync(packagesDir)
-  .filter((name) => !name.includes('ihive-lib'))
+  .filter((name) => {
+    const fullPath = path.join(packagesDir, name)
+    return !name.includes('ihive-lib') && fs.lstatSync(fullPath).isDirectory()
+  })
   .map((name) => resolve(packagesDir, name))
 
 // 检查并等待ngcc进程完成
@@ -21,7 +24,7 @@ async function waitForNgcc() {
   const s = ora().start('检查ngcc进程状态...')
   try {
     // 等待一段时间，确保ngcc进程完成
-    await new Promise(resolve => setTimeout(resolve, 5000))
+    await new Promise((resolve) => setTimeout(resolve, 5000))
     s.succeed('ngcc进程检查完成')
   } catch (e) {
     s.fail('ngcc进程检查失败')
@@ -30,7 +33,10 @@ async function waitForNgcc() {
 }
 
 const buildTemplate = () =>
-  execa('npm run', ['build-all'], { cwd: PKG_MALL_COOK_TEMPLATE, stdio: 'inherit' })
+  execa('npm run', ['build-all'], {
+    cwd: PKG_MALL_COOK_TEMPLATE,
+    stdio: 'inherit',
+  })
 
 async function runTask(taskName, task) {
   const s = ora().start(`${taskName} 开始打包 `)
@@ -100,25 +106,29 @@ function copyFolderRecursive(source, target) {
       type: 'checkbox',
       name: 'selectedPlatforms',
       message: '请选择需要打包的平台包:',
-      choices: PKG_MALL_COOK_PLATFORMS.map(platformPath => path.basename(platformPath))
-    }
+      choices: PKG_MALL_COOK_PLATFORMS.map((platformPath) =>
+        path.basename(platformPath)
+      ),
+    },
   ])
 
   // 根据用户选择，过滤出需要处理的平台包路径
-  const selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS.filter(platformPath => 
+  const selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS.filter((platformPath) =>
     selectedPlatforms.includes(path.basename(platformPath))
   )
 
   await runTask('ihive-lib', buildTemplate)
   await Promise.all(
-    selectedPlatformPaths.map(platformPath => deleteIhiveForPlatform(platformPath))
+    selectedPlatformPaths.map((platformPath) =>
+      deleteIhiveForPlatform(platformPath)
+    )
   )
   await Promise.all(
-    selectedPlatformPaths.map(platformPath => {
+    selectedPlatformPaths.map((platformPath) => {
       const platformName = path.basename(platformPath)
-      const buildPlatform = () => execa('npm run', ['build-all'], { cwd: platformPath, stdio: 'inherit' })
+      const buildPlatform = () =>
+        execa('npm run', ['build-all'], { cwd: platformPath, stdio: 'inherit' })
       return runTask(platformName, buildPlatform)
     })
   )
-
 })()

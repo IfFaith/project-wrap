@@ -1,61 +1,80 @@
-## npm run upSVN：批量 SVN 更新并检测冲突
+# 项目自动化脚本集合
 
-在需要对 packages 目录下所有子项目进行 svn update，并检测是否有冲突时，可以使用以下命令：
+你好！这是一个用于简化项目日常开发流程的自动化脚本工具集。通过这些脚本，你可以一键完成SVN更新、依赖安装、项目构建和文件拷贝等一系列操作。
 
-```bash
-npm run upSVN
+## ⭐ 功能概览
+
+这个工具集的核心目标是提供一个`智能构建`流程，它可以根据代码仓库（SVN）的更新状态，自动判断并执行最合适的操作，从而为你节省时间和精力。
+
+核心命令是 `npm run smartBuild`。
+
+## 🚀 快速开始
+
+确保你的电脑已经安装了 [Node.js](https://nodejs.org/) (推荐LTS版本) 和 SVN 客户端。
+
+1.  **获取项目**: 克隆或下载本项目到你的电脑。
+2.  **安装依赖**: 在项目根目录下打开终端，运行 `npm install` 或 `npm i` 来安装脚本自身所需的依赖。
+3.  **准备子项目**: 进入 `packages` 文件夹，将你们的 `ihive-lib` 以及其他分系统项目通过 SVN 拉取到这里。
+4.  **安装子项目依赖**: 回到项目根目录，运行 `npm run installAll`，此命令会为 `packages` 目录下的所有项目安装它们各自的依赖。
+5.  **开始使用**: 你现在可以通过运行 `npm run smartBuild` 来开始日常的开发构建流程了。
+
+## 📖 命令详解
+
+| 命令 | 功能描述 |
+| :--- | :--- |
+| `npm run smartBuild` | **(推荐)** 启动智能构建流程。运行时会**首先让你选择要构建的项目**，然后自动完成SVN更新、依赖检查、构建和拷贝。 |
+| `npm run upSVN` | 批量更新 `packages` 目录下所有项目的 SVN。如果遇到冲突，命令会报错并停止。 |
+| `npm run installAll` | 为 `packages` 目录下的所有子项目统一执行 `npm i --force` 安装依赖。 |
+| `npm run build` | **(交互式)** 让你手动选择一个或多个项目进行构建。 |
+| `npm run build:all` | **(全自动)** 无需选择，直接构建 `packages` 目录下的所有项目。 |
+| `npm run copy` | 将所有子项目构建产物（`dist` 文件夹）统一复制到根目录下的 `dist` 目录中，方便集中查看。 |
+
+---
+
+### “智能构建”流程详解 (`smartBuild`)
+
+当你运行 `npm run smartBuild` 时，脚本会严格按照以下步骤执行：
+
+1.  **选择项目**: 脚本会首先列出所有可构建的项目，让你通过交互界面的方式选择本次要处理的一个或多个项目。
+
+2.  **SVN 更新**: 自动对 `packages` 文件夹下的所有项目执行 `svn update`。
+
+3.  **冲突检查**:
+    -   **如果检测到 SVN 冲突**: 整个流程会立即停止，并在终端里打印出冲突的文件列表，提示你先手动解决冲突。
+    -   **如果没有冲突**: 流程继续。
+
+4.  **依赖检查 (`package.json`)**:
+    -   脚本会检查 `package.json` 文件在 SVN 更新后是否有变化。
+    -   **如果有变化**: 意味着项目的依赖可能更新了。脚本会针对你**第一步选择的项目**自动执行以下三步：
+        1.  `npm run installAll` (安装新依赖)
+        2.  `npm run build` (用新依赖构建项目)
+        3.  `npm run copy` (拷贝构建好的文件)
+    -   **如果无变化**: 意味着无需重新安装依赖。脚本会跳过依赖安装，只为你**第一步选择的项目**执行：
+        1.  `npm run build` (构建项目)
+        2.  `npm run copy` (拷贝构建好的文件)
+
+5.  **完成**:
+    -   所有步骤成功执行后，你会看到成功提示。
+    -   如果过程中任何一步（如 `build`）失败，整个流程也会中断并报错。
+
+---
+
+## 📁 项目目录结构
+
 ```
-
-该脚本会自动遍历 packages 目录下的所有子项目，为每个项目执行 svn update。如果有冲突，会在终端输出所有冲突文件的完整路径；如果没有冲突，会提示"所有包 svn update 完成，无冲突。"
-
-## npm run installAll ：统一安装所有项目依赖
-
-在需要为 packages 目录下所有子项目执行 npm i --force 时，可以使用以下命令：
-
-```bash
-npm run installAll
-```
-
-该脚本会自动遍历 packages 目录下的所有子项目，并为每个项目执行 npm i --force 命令。
-
-## npm run build ：统一打包所有项目
-
-在需要为 packages 目录下项目进行打包时，可以使用以下命令：
-
-```bash
-npm run build
-```
-
-该脚本会自动遍历 packages 目录下的所有子项目，先执行 ihive-lib 的打包命令，并将 ihive 依赖包分别给每个分系统替换，之后为每个分系统执行 npm run build-all 指令
-
-## npm run copy：统一复制 dist 内容到 dist 目录
-
-在打包任务结束后，可以使用以下命令将 packages 目录下所有子项目的 dist 文件夹内容统一复制到根目录下的 dist 文件夹中：
-
-```bash
-npm run copy
-```
-
-该脚本会自动创建 dist 目录（如果不存在），并在复制前清空 dist 目录，确保内容为最新。
-
-## 项目目录结构
-```
-├── README.md
+├── README.md               # 本说明文件
 ├── .gitignore
-├── package.json
+├── package.json            # 项目配置和脚本命令
 ├── package-lock.json
-├── dist/
-├── scripts/
+├── dist/                     # 所有子项目打包后的产物目录
+├── scripts/                  # 自动化脚本目录
+│   ├── smart-build.js
 │   ├── build.js
 │   ├── copy-dist-to-dist.js
 │   ├── install-all.js
 │   └── svn-update-all.js
-├── .git/
-├── node_modules/
-└── packages/
+├── node_modules/             # 依赖目录 (已被 .gitignore 忽略)
+└── packages/                 # 存放所有子项目 (已被 .gitignore 忽略具体内容)
 ```
-dist/：所有子项目打包后的产物目录
-scripts/：自动化脚本目录
-packages/：存放所有子项目（已被 .gitignore 忽略具体内容）
-node_modules/：依赖目录（已被 .gitignore 忽略）
-其他为项目配置及说明文件
+
+希望这个工具能让你的工作更轻松！如果遇到问题或者有新的想法，随时可以提出。

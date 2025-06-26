@@ -97,25 +97,54 @@ function copyFolderRecursive(source, target) {
 }
 
 ;(async () => {
+  // 获取命令行参数 (去除 'node' 和脚本路径)
+  const args = process.argv.slice(2);
+  const buildAll = args.includes('--all');
+  // 过滤出所有非标志位的参数，作为要打包的平台名称
+  const platformsFromArgs = args.filter(arg => !arg.startsWith('--'));
+
   // 首先等待ngcc进程完成
   await waitForNgcc()
 
-  // 列出所有非ihive-lib的包，供用户选择
-  const { selectedPlatforms } = await inquirer.prompt([
-    {
-      type: 'checkbox',
-      name: 'selectedPlatforms',
-      message: '请选择需要打包的平台包:',
-      choices: PKG_MALL_COOK_PLATFORMS.map((platformPath) =>
-        path.basename(platformPath)
-      ),
-    },
-  ])
+  let selectedPlatformPaths;
 
-  // 根据用户选择，过滤出需要处理的平台包路径
-  const selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS.filter((platformPath) =>
-    selectedPlatforms.includes(path.basename(platformPath))
-  )
+  if (platformsFromArgs.length > 0) {
+    console.log(`接收到参数，将打包指定的平台: ${platformsFromArgs.join(', ')}`);
+    selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS.filter(platformPath =>
+      platformsFromArgs.includes(path.basename(platformPath))
+    );
+  } else if (buildAll) {
+    console.log('检测到 --all 参数，将自动打包所有平台。');
+    selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS;
+  } else {
+    // 如果没有通过参数指定平台，则弹出交互式选择框
+    const { selectedPlatforms } = await inquirer.prompt([
+      {
+        type: 'checkbox',
+        name: 'selectedPlatforms',
+        message: '请选择需要打包的平台包:',
+        choices: PKG_MALL_COOK_PLATFORMS.map((platformPath) =>
+          path.basename(platformPath)
+        ),
+        validate: function (answer) {
+          if (answer.length < 1) {
+            return '你必须至少选择一个平台进行打包。';
+          }
+          return true;
+        },
+      },
+    ])
+    // 根据用户选择，过滤出需要处理的平台包路径
+    selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS.filter((platformPath) =>
+      selectedPlatforms.includes(path.basename(platformPath))
+    )
+  }
+
+  // 如果没有选择任何平台（或者没有平台可选），则直接退出
+  if (selectedPlatformPaths.length === 0) {
+    console.log('没有选择任何平台进行打包，程序将退出。')
+    return
+  }
 
   await runTask('ihive-lib', buildTemplate)
   await Promise.all(

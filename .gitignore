@@ -1,0 +1,10 @@
+# 忽略所有dist目录
+/dist
+**/dist
+
+# 忽略所有node_modules目录
+/node_modules
+**/node_modules
+
+# 忽略packages目录下所有内容
+/packages/*

@@ -31,10 +31,21 @@ function runUpdateAndCheckStatus() {
     }
   }
 
-  // 2. 执行svn update并检测冲突
+  // 2. 执行svn revert和svn update并检测冲突
   for (const project of subProjects) {
     const projectPath = path.join(packagesDir, project);
     if (fs.lstatSync(projectPath).isDirectory()) {
+      // 新增：先还原本地所有修改
+      try {
+        console.log(`\n正在为 ${project} 执行 svn revert -R . ...`);
+        const revertOutput = execSync('svn revert -R .', { cwd: projectPath, encoding: 'utf-8' });
+        if (revertOutput) {
+          console.log(revertOutput);
+        }
+      } catch (revertError) {
+        console.error(`${project} svn revert 失败: ${revertError.message}`);
+      }
+      // 之后再执行svn update
       console.log(`\n正在为 ${project} 执行 svn update...`);
       try {
         const output = execSync('svn update', { cwd: projectPath, encoding: 'utf-8' });

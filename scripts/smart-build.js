@@ -14,14 +14,17 @@ const { runUpdateAndCheckStatus } = require('./svn-update-all.js')
 async function runNpmScript(script, args = [], params = {}) {
   const command = `npm run ${script}${
     args.length > 0 ? ' ' + args.join(' ') : ''
-  }`
-  const spinner = ora(`正在执行 '${command}'...`).start()
+    }`
+  let spinner
+  if (script !== 'build') {
+    spinner = ora(`正在执行 '${command}'...`).start()
+  }
   try {
     // 使用 execa 执行命令，'npm' 是命令，['run', script, ...args] 是参数
     await execa('npm', ['run', script, ...args], params)
-    spinner.succeed(`'${command}' 执行成功。`)
+    spinner&&spinner.succeed(`'${command}' 执行成功。`)
   } catch (error) {
-    spinner.fail(`'${command}' 执行失败。`)
+    spinner&&spinner.fail(`'${command}' 执行失败。`)
     // 打印错误详情
     console.error(error.stderr || error.stdout || error.message)
     // 抛出错误，中断后续流程

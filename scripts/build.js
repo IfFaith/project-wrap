@@ -4,6 +4,7 @@ const { resolve } = require('path')
 const fs = require('fs')
 const path = require('path')
 const inquirer = require('inquirer')
+const { execSync } = require('child_process')
 
 const CWD = process.cwd()
 const packagesDir = resolve(CWD, './packages')
@@ -19,16 +20,41 @@ const PKG_MALL_COOK_PLATFORMS = fs
   })
   .map((name) => resolve(packagesDir, name))
 
+// 检查ngcc进程是否存在
+function isNgccRunning() {
+  try {
+    let result;
+    if (process.platform === 'win32') {
+      // Windows
+      result = execSync('tasklist', { encoding: 'utf-8' });
+      return result.toLowerCase().includes('ngcc');
+    } else {
+      // Linux/Mac
+      result = execSync('ps aux', { encoding: 'utf-8' });
+      return result.includes('ngcc');
+    }
+  } catch (e) {
+    return false;
+  }
+}
+
 // 检查并等待ngcc进程完成
 async function waitForNgcc() {
   const s = ora().start('检查ngcc进程状态...')
   try {
-    // 等待一段时间，确保ngcc进程完成
-    await new Promise((resolve) => setTimeout(resolve, 5000))
-    s.succeed('ngcc进程检查完成')
+    let retry = 0;
+    while (isNgccRunning()) {
+      if (retry > 60) { // 最多等60次（约1分钟）
+        s.fail('ngcc进程长时间未结束，可能卡住了');
+        throw new Error('ngcc进程长时间未结束');
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      retry++;
+    }
+    s.succeed('ngcc进程检查完成');
   } catch (e) {
-    s.fail('ngcc进程检查失败')
-    console.error(`失败原因：${e.toString()}`)
+    s.fail('ngcc进程检查失败');
+    console.error(`失败原因：${e.toString()}`);
   }
 }
 
@@ -103,9 +129,6 @@ function copyFolderRecursive(source, target) {
   // 过滤出所有非标志位的参数，作为要打包的平台名称
   const platformsFromArgs = args.filter(arg => !arg.startsWith('--'));
 
-  // 首先等待ngcc进程完成
-  await waitForNgcc()
-
   let selectedPlatformPaths;
 
   if (platformsFromArgs.length > 0) {
@@ -146,18 +169,18 @@ function copyFolderRecursive(source, target) {
     return
   }
 
+  await waitForNgcc() // 打包ihive-lib前也检测一次
   await runTask('ihive-lib', buildTemplate)
   await Promise.all(
-    selectedPlatformPaths.map((platformPath) =>
-      deleteIhiveForPlatform(platformPath)
-    )
+    selectedPlatformPaths.map((platformPath) => deleteIhiveForPlatform(platformPath))
   )
-  await Promise.all(
-    selectedPlatformPaths.map((platformPath) => {
-      const platformName = path.basename(platformPath)
-      const buildPlatform = () =>
-        execa('npm run', ['build-all'], { cwd: platformPath, stdio: 'inherit' })
-      return runTask(platformName, buildPlatform)
-    })
-  )
+
+  // 依次对每个平台打包前都检测ngcc
+  for (const platformPath of selectedPlatformPaths) {
+    const platformName = path.basename(platformPath)
+    await waitForNgcc()
+    const buildPlatform = () =>
+      execa('npm run', ['build-all'], { cwd: platformPath, stdio: 'inherit' })
+    await runTask(platformName, buildPlatform)
+  }
 })()

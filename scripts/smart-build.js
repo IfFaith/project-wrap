@@ -36,6 +36,17 @@ async function runNpmScript(script, args = [], params = {}) {
  * 主函数，编排整个智能构建流程
  */
 async function main() {
+  // 记录开始时间
+  const startTime = new Date();
+  function formatTime(date) {
+    return date.getFullYear() + '-' +
+      String(date.getMonth() + 1).padStart(2, '0') + '-' +
+      String(date.getDate()).padStart(2, '0') + ' ' +
+      String(date.getHours()).padStart(2, '0') + ':' +
+      String(date.getMinutes()).padStart(2, '0') + ':' +
+      String(date.getSeconds()).padStart(2, '0');
+  }
+  
   // --- 新增：获取可选平台并让用户选择 ---
   const CWD = process.cwd()
   const packagesDir = path.resolve(CWD, './packages')
@@ -54,7 +65,7 @@ async function main() {
     {
       type: 'checkbox',
       name: 'selectedPlatforms',
-      message: '请选择你希望通过智能构建流程打包的项目:',
+      message: '请选择你希望通过智能构建流程打包的项目：(按<space>下可选择、<a>切换全部、<i>反转选择，<enter>进行)',
       choices: availablePlatforms,
       validate: function (answer) {
         if (answer.length < 1) {
@@ -99,6 +110,10 @@ async function main() {
     }
 
     console.log('\n✅ \x1b[32m智能构建流程全部执行成功！\x1b[0m')
+    // 记录结束时间并输出
+    const endTime = new Date();
+    console.log(`\n🕒 打包开始时间：${formatTime(startTime)}`);
+    console.log(`\n🕒 打包结束时间：${formatTime(endTime)}`);
   } catch (error) {
     console.error('\n❌ \x1b[31m智能构建流程因错误中断。\x1b[0m')
     process.exit(1)

@@ -23,15 +23,16 @@ const PKG_MALL_COOK_PLATFORMS = fs
 // 检查ngcc进程是否存在
 function isNgccRunning() {
   try {
-    let result;
     if (process.platform === 'win32') {
-      // Windows
-      result = execSync('tasklist', { encoding: 'utf-8' });
-      return result.toLowerCase().includes('ngcc');
+      // 用 PowerShell 查询所有 node.exe 进程的命令行
+      const result = execSync(
+        'powershell -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \'node.exe\' } | Select-Object -ExpandProperty CommandLine"',
+        { encoding: 'utf-8' }
+      );
+      return result.includes('@angular/compiler-cli/ngcc');
     } else {
-      // Linux/Mac
-      result = execSync('ps aux', { encoding: 'utf-8' });
-      return result.includes('ngcc');
+      const result = execSync('ps aux | grep node', { encoding: 'utf-8' });
+      return result.split('\\n').some(line => line.includes('@angular/compiler-cli/ngcc'));
     }
   } catch (e) {
     return false;

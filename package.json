@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "smartBuild": "node scripts/smart-build.js",
+    "build-all": "node scripts/smart-build.js",
     "upSVN": "node scripts/svn-update-all.js",
     "installAll": "node scripts/install-all.js",
     "build": "node scripts/build.js",
     "build:all": "node scripts/build.js --all",
-    "copy": "node scripts/copy-dist-to-dist.js"
+    "copy": "node scripts/copy-dist-to-dist.js",
+    "deploy": "node scripts/deploy.js"
   },
   "author": "",
   "license": "ISC",

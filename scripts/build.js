@@ -28,14 +28,16 @@ function isNgccRunning() {
       const result = execSync(
         'powershell -Command "Get-CimInstance Win32_Process | Where-Object { $_.Name -eq \'node.exe\' } | Select-Object -ExpandProperty CommandLine"',
         { encoding: 'utf-8' }
-      );
-      return result.includes('@angular/compiler-cli/ngcc');
+      )
+      return result.includes('@angular/compiler-cli/ngcc')
     } else {
-      const result = execSync('ps aux | grep node', { encoding: 'utf-8' });
-      return result.split('\\n').some(line => line.includes('@angular/compiler-cli/ngcc'));
+      const result = execSync('ps aux | grep node', { encoding: 'utf-8' })
+      return result
+        .split('\\n')
+        .some((line) => line.includes('@angular/compiler-cli/ngcc'))
     }
   } catch (e) {
-    return false;
+    return false
   }
 }
 
@@ -43,19 +45,20 @@ function isNgccRunning() {
 async function waitForNgcc() {
   const s = ora().start('检查ngcc进程状态...')
   try {
-    let retry = 0;
+    let retry = 0
     while (isNgccRunning()) {
-      if (retry > 60) { // 最多等60次（约1分钟）
-        s.fail('ngcc进程长时间未结束，可能卡住了');
-        throw new Error('ngcc进程长时间未结束');
+      if (retry > 60) {
+        // 最多等60次（约1分钟）
+        s.fail('ngcc进程长时间未结束，可能卡住了')
+        throw new Error('ngcc进程长时间未结束')
       }
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      retry++;
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      retry++
     }
-    s.succeed('ngcc进程检查完成');
+    s.succeed('ngcc进程检查完成')
   } catch (e) {
-    s.fail('ngcc进程检查失败');
-    console.error(`失败原因：${e.toString()}`);
+    s.fail('ngcc进程检查失败')
+    console.error(`失败原因：${e.toString()}`)
   }
 }
 
@@ -98,7 +101,16 @@ async function deleteIhiveForPlatform(platformPath) {
     console.error(`删除失败：${err}`)
   }
 }
-
+// 检查文件中是否有imobile文件夹
+function checkIMobileFolder(parentPath) {
+  try {
+    const stats = fs.existsSync(path.join(parentPath, 'imobile'))
+    return !!stats
+  } catch (err) {
+    if (err.code === 'ENOENT') return false // 文件夹不存在
+    throw err // 其他错误（如权限问题）
+  }
+}
 function copyFolderRecursive(source, target) {
   // 检查目标文件夹是否存在，如果不存在则创建
   if (!fs.existsSync(target)) {
@@ -125,21 +137,21 @@ function copyFolderRecursive(source, target) {
 
 ;(async () => {
   // 获取命令行参数 (去除 'node' 和脚本路径)
-  const args = process.argv.slice(2);
-  const buildAll = args.includes('--all');
+  const args = process.argv.slice(2)
+  const buildAll = args.includes('--all')
   // 过滤出所有非标志位的参数，作为要打包的平台名称
-  const platformsFromArgs = args.filter(arg => !arg.startsWith('--'));
+  const platformsFromArgs = args.filter((arg) => !arg.startsWith('--'))
 
-  let selectedPlatformPaths;
+  let selectedPlatformPaths
 
   if (platformsFromArgs.length > 0) {
-    console.log(`接收到参数，将打包指定的平台: ${platformsFromArgs.join(', ')}`);
-    selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS.filter(platformPath =>
+    console.log(`接收到参数，将打包指定的平台: ${platformsFromArgs.join(', ')}`)
+    selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS.filter((platformPath) =>
       platformsFromArgs.includes(path.basename(platformPath))
-    );
+    )
   } else if (buildAll) {
-    console.log('检测到 --all 参数，将自动打包所有平台。');
-    selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS;
+    console.log('检测到 --all 参数，将自动打包所有平台。')
+    selectedPlatformPaths = PKG_MALL_COOK_PLATFORMS
   } else {
     // 如果没有通过参数指定平台，则弹出交互式选择框
     const { selectedPlatforms } = await inquirer.prompt([
@@ -152,9 +164,9 @@ function copyFolderRecursive(source, target) {
         ),
         validate: function (answer) {
           if (answer.length < 1) {
-            return '你必须至少选择一个平台进行打包。';
+            return '你必须至少选择一个平台进行打包。'
           }
-          return true;
+          return true
         },
       },
     ])
@@ -173,15 +185,22 @@ function copyFolderRecursive(source, target) {
   await waitForNgcc() // 打包ihive-lib前也检测一次
   await runTask('ihive-lib', buildTemplate)
   await Promise.all(
-    selectedPlatformPaths.map((platformPath) => deleteIhiveForPlatform(platformPath))
+    selectedPlatformPaths.map((platformPath) =>
+      deleteIhiveForPlatform(platformPath)
+    )
   )
 
   // 依次对每个平台打包前都检测ngcc
   for (const platformPath of selectedPlatformPaths) {
     const platformName = path.basename(platformPath)
     await waitForNgcc()
+    const hasImobile = checkIMobileFolder(platformPath)
+    let order = 'build-webapp-prod'
+    if (hasImobile) {
+      order = 'build-all'
+    }
     const buildPlatform = () =>
-      execa('npm run', ['build-all'], { cwd: platformPath, stdio: 'inherit' })
+      execa('npm run', [order], { cwd: platformPath, stdio: 'inherit' })
     await runTask(platformName, buildPlatform)
   }
 })()

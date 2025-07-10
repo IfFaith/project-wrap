@@ -89,7 +89,7 @@ async function main() {
 
   // 1. 更新 SVN 并检查状态
   // 注意：runUpdateAndCheckStatus 是同步的，它会阻塞在这里直到 SVN 操作完成
-  const { conflictFiles, changedPackages } = runUpdateAndCheckStatus()
+  const { conflictFiles, changedPackages } = runUpdateAndCheckStatus(selectedPlatforms)
 
   if (conflictFiles.length > 0) {
     // SVN 冲突日志已在 runUpdateAndCheckStatus 中打印，这里只做总结和退出

@@ -6,7 +6,7 @@ const path = require('path')
  * 遍历 `packages` 目录下的所有子项目，执行 `svn update`，并返回冲突文件列表和有变动的 package.json 文件列表。
  * @returns {{conflictFiles: string[], changedPackages: string[]}}
  */
-function runUpdateAndCheckStatus() {
+function runUpdateAndCheckStatus(selectedPlatforms) {
   const CWD = process.cwd()
   const packagesDir = path.join(CWD, 'packages')
 
@@ -17,7 +17,18 @@ function runUpdateAndCheckStatus() {
     return { conflictFiles: [], changedPackages: [] }
   }
 
-  const subProjects = fs.readdirSync(packagesDir)
+  const allSubProjects = fs.readdirSync(packagesDir)
+  // 新增：只处理selectedPlatforms指定的项目，且始终包含ihive-lib
+  let subProjects = allSubProjects
+  if (Array.isArray(selectedPlatforms) && selectedPlatforms.length > 0) {
+    subProjects = allSubProjects.filter(name => selectedPlatforms.includes(name))
+    // 保证 ihive-lib 一定在 subProjects 里
+    const ihiveLib = allSubProjects.find(name => name.includes('ihive-lib'))
+    if (ihiveLib && !subProjects.includes(ihiveLib)) {
+      subProjects.push(ihiveLib)
+    }
+  }
+
   const conflictFiles = []
   const changedPackages = []
   const beforePackageJson = {}

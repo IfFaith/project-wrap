@@ -14,7 +14,7 @@ const { runUpdateAndCheckStatus } = require('./svn-update-all.js')
 async function runNpmScript(script, args = [], params = {}) {
   const command = `npm run ${script}${
     args.length > 0 ? ' ' + args.join(' ') : ''
-    }`
+  }`
   let spinner
   if (script !== 'build') {
     spinner = ora(`正在执行 '${command}'...`).start()
@@ -22,9 +22,9 @@ async function runNpmScript(script, args = [], params = {}) {
   try {
     // 使用 execa 执行命令，'npm' 是命令，['run', script, ...args] 是参数
     await execa('npm', ['run', script, ...args], params)
-    spinner&&spinner.succeed(`'${command}' 执行成功。`)
+    spinner && spinner.succeed(`'${command}' 执行成功。`)
   } catch (error) {
-    spinner&&spinner.fail(`'${command}' 执行失败。`)
+    spinner && spinner.fail(`'${command}' 执行失败。`)
     // 打印错误详情
     console.error(error.stderr || error.stdout || error.message)
     // 抛出错误，中断后续流程
@@ -37,16 +37,23 @@ async function runNpmScript(script, args = [], params = {}) {
  */
 async function main() {
   // 记录开始时间
-  const startTime = new Date();
+  const startTime = new Date()
   function formatTime(date) {
-    return date.getFullYear() + '-' +
-      String(date.getMonth() + 1).padStart(2, '0') + '-' +
-      String(date.getDate()).padStart(2, '0') + ' ' +
-      String(date.getHours()).padStart(2, '0') + ':' +
-      String(date.getMinutes()).padStart(2, '0') + ':' +
-      String(date.getSeconds()).padStart(2, '0');
+    return (
+      date.getFullYear() +
+      '-' +
+      String(date.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(date.getDate()).padStart(2, '0') +
+      ' ' +
+      String(date.getHours()).padStart(2, '0') +
+      ':' +
+      String(date.getMinutes()).padStart(2, '0') +
+      ':' +
+      String(date.getSeconds()).padStart(2, '0')
+    )
   }
-  
+
   // --- 新增：获取可选平台并让用户选择 ---
   const CWD = process.cwd()
   const packagesDir = path.resolve(CWD, './packages')
@@ -65,7 +72,8 @@ async function main() {
     {
       type: 'checkbox',
       name: 'selectedPlatforms',
-      message: '请选择你希望通过智能构建流程打包的项目：(按<space>下可选择、<a>切换全部、<i>反转选择，<enter>进行)',
+      message:
+        '请选择你希望通过智能构建流程打包的项目：(按<space>下可选择、<a>切换全部、<i>反转选择，<enter>进行)',
       choices: availablePlatforms,
       validate: function (answer) {
         if (answer.length < 1) {
@@ -111,9 +119,9 @@ async function main() {
 
     console.log('\n✅ \x1b[32m智能构建流程全部执行成功！\x1b[0m')
     // 记录结束时间并输出
-    const endTime = new Date();
-    console.log(`\n🕒 打包开始时间：${formatTime(startTime)}`);
-    console.log(`\n🕒 打包结束时间：${formatTime(endTime)}`);
+    const endTime = new Date()
+    console.log(`\n🕒 打包开始时间：${formatTime(startTime)}`)
+    console.log(`\n🕒 打包结束时间：${formatTime(endTime)}`)
   } catch (error) {
     console.error('\n❌ \x1b[31m智能构建流程因错误中断。\x1b[0m')
     process.exit(1)

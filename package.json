@@ -9,11 +9,13 @@
     "build": "node scripts/build.js",
     "build:all": "node scripts/build.js --all",
     "copy": "node scripts/copy-dist-to-dist.js",
-    "deploy": "node scripts/deploy.js"
+    "deploy": "node scripts/deploy.js",
+    "zip": "node scripts/zip.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "archiver": "^7.0.1",
     "child_process": "^1.0.2",
     "cross-env": "^7.0.3",
     "execa": "4.0.2",

@@ -119,7 +119,7 @@ async function getFolder() {
   })
 
   if (availablePlatforms.length === 0) {
-    console.log('❌ 在 "packages" 目录下未找到任何可构建的平台项目。')
+    console.log('❌ 在 "dist" 目录下未找到任何可压缩的项目。')
     return
   }
 
@@ -128,7 +128,7 @@ async function getFolder() {
       type: 'checkbox',
       name: 'selectedPlatforms',
       message:
-        '请选择你希望通过智能构建流程打包的项目：(按<space>下可选择、<a>切换全部、<i>反转选择，<enter>进行)',
+        '请选择你希望压缩的项目：(按<space>下可选择、<a>切换全部、<i>反转选择，<enter>进行)',
       choices: availablePlatforms,
       validate: function (answer) {
         if (answer.length < 1) {
